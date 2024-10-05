@@ -77,6 +77,14 @@ function createFromObject(
         getFieldName(fieldDescriptor),
       );
 
+    if (field.isRepeated(fieldDescriptor)) {
+      assignmentExpr = ts.factory.createBinaryExpression(
+        assignmentExpr, 
+        ts.SyntaxKind.BarBarToken, 
+        ts.factory.createArrayLiteralExpression([])
+      );
+    }
+
     if (field.isMap(fieldDescriptor)) {
       const [keyDescriptor, valueDescriptor] = type.getMapDescriptor(
         fieldDescriptor.type_name,
@@ -438,13 +446,26 @@ function createToObject(
     ) {
       const propertyAccessor = ts.factory.createPropertyAccessExpression(
         ts.factory.createThis(),
-        getFieldName(fieldDescriptor),
+        getPrefixedFieldName("has", fieldDescriptor),
       );
       let condition = ts.factory.createBinaryExpression(
         propertyAccessor,
-        ts.factory.createToken(ts.SyntaxKind.ExclamationEqualsToken),
-        ts.factory.createNull(),
+        ts.factory.createToken(ts.SyntaxKind.EqualsEqualsToken),
+        ts.factory.createTrue(),
       );
+
+      if (field.isRepeated(fieldDescriptor)) {
+        const propertyAccessor = ts.factory.createPropertyAccessExpression(
+          ts.factory.createThis(),
+          getFieldName(fieldDescriptor),
+        );
+
+        condition = ts.factory.createBinaryExpression(
+          ts.factory.createPropertyAccessExpression(propertyAccessor, 'length'),
+          ts.factory.createToken(ts.SyntaxKind.GreaterThanToken),
+          ts.factory.createNumericLiteral(0),
+        );  
+      }
 
       statements.push(
         ts.factory.createIfStatement(
