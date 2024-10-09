@@ -446,22 +446,33 @@ function createToObject(
     ) {
       const propertyAccessor = ts.factory.createPropertyAccessExpression(
         ts.factory.createThis(),
-        getPrefixedFieldName("has", fieldDescriptor),
+        getFieldName(fieldDescriptor),
       );
       let condition = ts.factory.createBinaryExpression(
         propertyAccessor,
-        ts.factory.createToken(ts.SyntaxKind.EqualsEqualsToken),
-        ts.factory.createTrue(),
-      );
+        ts.factory.createToken(ts.SyntaxKind.ExclamationEqualsToken),
+        ts.factory.createNull(),
+      )
 
-      if (field.isRepeated(fieldDescriptor)) {
+      if (field.hasPresenceGetter(rootDescriptor, fieldDescriptor)) {
+        const propertyAccessor = ts.factory.createPropertyAccessExpression(
+          ts.factory.createThis(),
+          getPrefixedFieldName("has", fieldDescriptor),
+        );
+        condition = ts.factory.createBinaryExpression(
+          propertyAccessor,
+          ts.factory.createToken(ts.SyntaxKind.EqualsEqualsToken),
+          ts.factory.createTrue(),
+        );
+      }
+      if (field.isRepeated(fieldDescriptor) || field.isMap(fieldDescriptor)) {
         const propertyAccessor = ts.factory.createPropertyAccessExpression(
           ts.factory.createThis(),
           getFieldName(fieldDescriptor),
         );
 
         condition = ts.factory.createBinaryExpression(
-          ts.factory.createPropertyAccessExpression(propertyAccessor, 'length'),
+          ts.factory.createPropertyAccessExpression(propertyAccessor, field.isMap(fieldDescriptor) ? 'size' : 'length'),
           ts.factory.createToken(ts.SyntaxKind.GreaterThanToken),
           ts.factory.createNumericLiteral(0),
         );  
